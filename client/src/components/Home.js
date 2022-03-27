@@ -62,9 +62,9 @@ const Home = ({ user, logout }) => {
     });
   };
 
-  const postMessage = async (body) => {
+  const postMessage = (body) => {
     try {
-      const data = await saveMessage(body);
+      const data = saveMessage(body);
 
       if (!body.conversationId) {
         addNewConvo(body.recipientId, data.message);
