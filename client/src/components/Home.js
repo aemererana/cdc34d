@@ -123,6 +123,7 @@ const Home = ({ user, logout }) => {
           return { ...convo, ...changes };
         });
       });
+      setConversations(conversations);
     },
     [setConversations]
   );
