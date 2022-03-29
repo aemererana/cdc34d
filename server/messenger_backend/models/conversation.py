@@ -3,6 +3,7 @@ from django.db.models import Q
 
 from . import utils
 from .user import User
+from .group import Group
 
 
 class Conversation(utils.CustomModel):
@@ -12,6 +13,9 @@ class Conversation(utils.CustomModel):
     )
     user2 = models.ForeignKey(
         User, on_delete=models.CASCADE, db_column="user2Id", related_name="+", 
+    )
+    groupId = models.ForeignKey(
+        Group, on_delete=models.CASCADE
     )
     createdAt = models.DateTimeField(auto_now_add=True, db_index=True)
     updatedAt = models.DateTimeField(auto_now=True)
@@ -26,3 +30,9 @@ class Conversation(utils.CustomModel):
             )
         except Conversation.DoesNotExist:
             return None
+
+    def find_conversation_by_group(groupId):
+            try:
+                return Conversation.objects.get(groupId=groupId)
+            except Conversation.DoesNotExist:
+                return None   
