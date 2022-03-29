@@ -62,21 +62,39 @@ const Home = ({ user, logout }) => {
     });
   };
 
-  const postMessage = async (body) => {
-    try {
-      const data = await saveMessage(body);
-
-      if (!body.conversationId) {
-        addNewConvo(body.recipientId, data.message);
-      } else {
-        addMessageToConversation(data);
+const msgBeingRead = useCallback((username) => {
+  const conversation = conversations
+    ? conversations.find(
+        (conversation) => conversation.otherUser.username === username
+      )
+    : undefined;
+  if(conversation && conversation !== -1) {
+    axios.get("/api/read_messages", {
+      params: { 
+        conversationId: conversation.id, 
+        recipientId: conversation.otherUser.id 
       }
+    });
+  }
+}, [conversations]);
 
-      sendMessage(data, body);
-    } catch (error) {
-      console.error(error);
+const postMessage = async (body) => {
+  try {
+    const data = await saveMessage(body);
+
+    if (!body.conversationId) {
+      addNewConvo(body.recipientId, data.message);
+    } else {
+      addMessageToConversation(data);
     }
-  };
+
+    sendMessage(data, body);
+
+    msgBeingRead(body.sender.username);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const addNewConvo = useCallback(
     (recipientId, message) => {
@@ -92,7 +110,7 @@ const Home = ({ user, logout }) => {
         return newConvo;
       });
     },
-    [setConversations]
+    []
   );
 
   const addMessageToConversation = useCallback(
@@ -108,20 +126,26 @@ const Home = ({ user, logout }) => {
         newConvo.latestMessageText = message.text;
         setConversations((prev) => [newConvo, ...prev]);
       }
+      
 
-      conversations.forEach((convo) => {
-        if (convo.id === message.conversationId) {
-          convo.messages.push(message);
-          convo.latestMessageText = message.text;
-        }
+      setConversations(conversations => {
+        const newArr = conversations.map( convo => {
+          if (convo.id === message.conversationId) {
+            convo.messages.push(message);
+            convo.latestMessageText = message.text;
+          }
+          return convo;
+        });
+        return newArr;
       });
-      setConversations(conversations);
     },
-    [setConversations, conversations],
+    [],
   );
+    
 
   const setActiveChat = (username) => {
     setActiveConversation(username);
+    msgBeingRead(username);
   };
 
   const addOnlineUser = useCallback((id) => {
@@ -152,6 +176,20 @@ const Home = ({ user, logout }) => {
     );
   }, []);
 
+const fetchConversations = useCallback(async () => {
+    try {
+      const { data } = await axios.get("/api/conversations");
+      setConversations(data);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  const reqNewMsgs_cb = useCallback(() => {
+    console.log("I'm being asked to request new msgs");
+    fetchConversations();
+  }, [fetchConversations]);
+
   // Lifecycle
 
   useEffect(() => {
@@ -159,6 +197,7 @@ const Home = ({ user, logout }) => {
     socket.on("add-online-user", addOnlineUser);
     socket.on("remove-offline-user", removeOfflineUser);
     socket.on("new-message", addMessageToConversation);
+    socket.on("req-new-msgs", reqNewMsgs_cb);
 
     return () => {
       // before the component is destroyed
@@ -166,8 +205,9 @@ const Home = ({ user, logout }) => {
       socket.off("add-online-user", addOnlineUser);
       socket.off("remove-offline-user", removeOfflineUser);
       socket.off("new-message", addMessageToConversation);
+      socket.off("req-new-msgs", reqNewMsgs_cb);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
+  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, reqNewMsgs_cb, socket]);
 
   useEffect(() => {
     // when fetching, prevent redirect
@@ -183,18 +223,10 @@ const Home = ({ user, logout }) => {
   }, [user, history, isLoggedIn]);
 
   useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const { data } = await axios.get("/api/conversations");
-        setConversations(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
     if (!user.isFetching) {
       fetchConversations();
     }
-  }, [user]);
+  }, [user, fetchConversations]);
 
   const handleLogout = async () => {
     if (user && user.id) {
