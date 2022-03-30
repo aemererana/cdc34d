@@ -98,16 +98,18 @@ const postMessage = async (body) => {
 
   const addNewConvo = useCallback(
     (recipientId, message) => {
-      setConversations(conversations => {
-        const newConvo = conversations.map(convo => {
+      setConversations(prev => {
+        return prev.map(convo => {
+          let changes = {};
           if (convo.otherUser.id === recipientId) {
-            convo.messages.push(message);
-            convo.latestMessageText = message.text;
-            convo.id = message.conversationId;
+            const newMsgs = Array.from(convo.messages);
+            newMsgs.push(message);
+            changes.messages = newMsgs;
+            changes.latestMessageText = message.text;
+            changes.id = message.conversationId;
           }
-          return convo; //return to new array
+          return { ...convo, ...changes };
         });
-        return newConvo;
       });
     },
     []
@@ -128,18 +130,20 @@ const postMessage = async (body) => {
       }
       
 
-      setConversations(conversations => {
-        const newArr = conversations.map( convo => {
+      setConversations(prev => {
+        return prev.map(convo => {
+          let changes = {};
           if (convo.id === message.conversationId) {
-            convo.messages.push(message);
-            convo.latestMessageText = message.text;
+            const msgsCopy = Array.from(convo.messages);
+            msgsCopy.push(message);
+            changes.messages = msgsCopy;
+            changes.latestMessageText = message.text;
           }
-          return convo;
+          return { ...convo, ...changes };
         });
-        return newArr;
       });
     },
-    [],
+    [setConversations]
   );
     
 
