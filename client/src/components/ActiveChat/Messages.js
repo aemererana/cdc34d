@@ -6,21 +6,13 @@ import moment from 'moment';
 const Messages = (props) => {
   const { messages, otherUser, userId } = props;
 
-  const lastReadRecieptIdx = messages.map(elm => elm.isRead && elm.senderId === userId).lastIndexOf(true);
-
   return (
     <Box>
-      {messages.map((message, idx) => {
+      {messages.map((message) => {
         const time = moment(message.createdAt).format('h:mm');
 
         return message.senderId === userId ? (
-          <SenderBubble
-            otherUser={otherUser} 
-            key={message.id} 
-            text={message.text} 
-            time={time}
-            activeReadReceipt={idx===lastReadRecieptIdx}
-          />
+          <SenderBubble key={message.id} text={message.text} time={time} />
         ) : (
           <OtherUserBubble
             key={message.id}
