@@ -62,21 +62,38 @@ const Home = ({ user, logout }) => {
     });
   };
 
-  const postMessage = async (body) => {
-    try {
-      const data = await saveMessage(body);
 
-      if (!body.conversationId) {
-        addNewConvo(body.recipientId, data.message);
-      } else {
-        addMessageToConversation(data);
-      }
+const msgBeingRead = useCallback(() => {
+  // find the id of active conversation
+  const conversation = conversations
+    ? conversations.find(
+        (conversation) => conversation.otherUser.username === activeConversation
+      )
+    : undefined;
+  // only send to backend when convo id is valid
+  if (conversation && conversation !== -1) {
+    axios.put("/api/messages/read-status", {
+      conversationId: conversation.id,
+      recipientId: conversation.otherUser.id
+    });
+  }
+}, [conversations, activeConversation]);
 
-      sendMessage(data, body);
-    } catch (error) {
-      console.error(error);
+const postMessage = async (body) => {
+  try {
+    const data = await saveMessage(body);
+
+    if (!body.conversationId) {
+      addNewConvo(body.recipientId, data.message);
+    } else {
+      addMessageToConversation(data);
     }
-  };
+
+    sendMessage(data, body);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const addNewConvo = useCallback(
     (recipientId, message) => {
@@ -110,7 +127,7 @@ const Home = ({ user, logout }) => {
         newConvo.latestMessageText = message.text;
         setConversations((prev) => [newConvo, ...prev]);
       }
-
+      
       setConversations(prev => {
         return prev.map(convo => {
           let changes = {};
@@ -126,9 +143,12 @@ const Home = ({ user, logout }) => {
     },
     [setConversations]
   );
+    
 
   const setActiveChat = (username) => {
     setActiveConversation(username);
+    // update messages after opening
+    msgBeingRead(username);
   };
 
   const addOnlineUser = useCallback((id) => {
