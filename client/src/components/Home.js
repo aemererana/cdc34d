@@ -110,7 +110,7 @@ const postMessage = async (body) => {
         });
       });
     },
-    []
+    [setConversations]
   );
 
   const addMessageToConversation = useCallback(
