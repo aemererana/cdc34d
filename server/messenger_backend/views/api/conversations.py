@@ -62,9 +62,6 @@ class Conversations(APIView):
                     convo_dict["otherUser"]["online"] = False
 
                 conversations_response.append(convo_dict)
-
-
-                
             conversations_response.sort(
                 key=lambda convo: convo["messages"][0]["createdAt"],
                 reverse=True,

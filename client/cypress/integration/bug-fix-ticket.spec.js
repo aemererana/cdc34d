@@ -26,11 +26,8 @@ describe("Bug Fix: Sending Messages", () => {
     cy.contains("Bob").click();
 
     cy.get("input[name=text]").type("First message{enter}");
-    cy.wait(200); // added delay as react state changes are async
     cy.get("input[name=text]").type("Second message{enter}");
-    cy.wait(200); 
     cy.get("input[name=text]").type("Third message{enter}");
-    cy.wait(1000);
 
     cy.contains("First message");
     cy.contains("Second message");
@@ -43,10 +40,8 @@ describe("Bug Fix: Sending Messages", () => {
     cy.contains("Bob").click();
 
     cy.contains("First message").then(() => {
-      cy.wait(1000);
       // Select the message list DOM by finding the closest common ancestor
       // between two messages.
-
       const $firstMessage = Cypress.$(':contains("First message")');
       const $secondMessage = Cypress.$(':contains("Second message")');
       const $list = $firstMessage.parents().has($secondMessage).first();
@@ -65,12 +60,9 @@ describe("Bug Fix: Sending Messages", () => {
     cy.contains("Bob").click();
 
     cy.get("input[name=text]").type("Fourth message{enter}");
-    cy.wait(200); // added delay as react state changes are async
     cy.get("input[name=text]").type("Fifth message{enter}");
-    cy.wait(200); 
     cy.get("input[name=text]").type("Sixth message{enter}");
-    cy.wait(1000);
-    
+
     cy.contains("Fourth message");
     cy.contains("Fifth message");
     cy.contains("Sixth message");
