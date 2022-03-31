@@ -36,12 +36,6 @@ class ReadMessages(APIView):
 
         # get messages where the other party is
         # the sender and hasn't been read.
-        messages = Message.objects.filter(conversation=conversation_id).exclude(senderId=reading_person_id, isRead=True)
-
-        for msg in messages:
-            msg.isRead = True
-
-        # bulk update for all msgs to be read
-        Message.objects.bulk_update(messages, ['isRead'])
+        Message.objects.filter(conversation=conversation_id).exclude(senderId=reading_person_id, isRead=True).update(isRead=True)
 
         return HttpResponse(status=204)
