@@ -9,14 +9,12 @@ from .group import Group
 class Conversation(utils.CustomModel):
 
     user1 = models.ForeignKey(
-        User, on_delete=models.CASCADE, db_column="user1Id", related_name="+"
+        User, on_delete=models.CASCADE, db_column="user1Id", related_name="+", null=True
     )
     user2 = models.ForeignKey(
-        User, on_delete=models.CASCADE, db_column="user2Id", related_name="+", 
+        User, on_delete=models.CASCADE, db_column="user2Id", related_name="+", null=True
     )
-    groupId = models.ForeignKey(
-        Group, on_delete=models.CASCADE
-    )
+    groupId = models.OneToOneField(Group, on_delete=models.CASCADE, null=True)
     createdAt = models.DateTimeField(auto_now_add=True, db_index=True)
     updatedAt = models.DateTimeField(auto_now=True)
 
