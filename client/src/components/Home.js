@@ -62,6 +62,7 @@ const Home = ({ user, logout }) => {
     });
   };
 
+
 const msgBeingRead = useCallback(() => {
   // find the id of active conversation
   const conversation = conversations
@@ -127,7 +128,6 @@ const postMessage = async (body) => {
         setConversations((prev) => [newConvo, ...prev]);
       }
       
-
       setConversations(prev => {
         return prev.map(convo => {
           let changes = {};
