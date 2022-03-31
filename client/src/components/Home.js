@@ -62,21 +62,21 @@ const Home = ({ user, logout }) => {
     });
   };
 
-const msgBeingRead = useCallback((username) => {
+const msgBeingRead = useCallback(() => {
+  // find the id of active conversation
   const conversation = conversations
     ? conversations.find(
-        (conversation) => conversation.otherUser.username === username
+        (conversation) => conversation.otherUser.username === activeConversation
       )
     : undefined;
-  if(conversation && conversation !== -1) {
-    axios.get("/api/read_messages", {
-      params: { 
-        conversationId: conversation.id, 
-        recipientId: conversation.otherUser.id 
-      }
+  // only send to backend when convo id is valid
+  if (conversation && conversation !== -1) {
+    axios.put("/api/messages/read-status", {
+      conversationId: conversation.id,
+      recipientId: conversation.otherUser.id
     });
   }
-}, [conversations]);
+}, [conversations, activeConversation]);
 
 const postMessage = async (body) => {
   try {
@@ -89,8 +89,6 @@ const postMessage = async (body) => {
     }
 
     sendMessage(data, body);
-
-    msgBeingRead(body.sender.username);
   } catch (error) {
     console.error(error);
   }
@@ -149,6 +147,7 @@ const postMessage = async (body) => {
 
   const setActiveChat = (username) => {
     setActiveConversation(username);
+    // update messages after opening
     msgBeingRead(username);
   };
 
@@ -180,20 +179,6 @@ const postMessage = async (body) => {
     );
   }, []);
 
-const fetchConversations = useCallback(async () => {
-    try {
-      const { data } = await axios.get("/api/conversations");
-      setConversations(data);
-    } catch (error) {
-      console.error(error);
-    }
-  }, []);
-
-  const reqNewMsgs_cb = useCallback(() => {
-    console.log("I'm being asked to request new msgs");
-    fetchConversations();
-  }, [fetchConversations]);
-
   // Lifecycle
 
   useEffect(() => {
@@ -201,7 +186,6 @@ const fetchConversations = useCallback(async () => {
     socket.on("add-online-user", addOnlineUser);
     socket.on("remove-offline-user", removeOfflineUser);
     socket.on("new-message", addMessageToConversation);
-    socket.on("req-new-msgs", reqNewMsgs_cb);
 
     return () => {
       // before the component is destroyed
@@ -209,9 +193,8 @@ const fetchConversations = useCallback(async () => {
       socket.off("add-online-user", addOnlineUser);
       socket.off("remove-offline-user", removeOfflineUser);
       socket.off("new-message", addMessageToConversation);
-      socket.off("req-new-msgs", reqNewMsgs_cb);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, reqNewMsgs_cb, socket]);
+  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
 
   useEffect(() => {
     // when fetching, prevent redirect
@@ -227,10 +210,18 @@ const fetchConversations = useCallback(async () => {
   }, [user, history, isLoggedIn]);
 
   useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const { data } = await axios.get("/api/conversations");
+        setConversations(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
     if (!user.isFetching) {
       fetchConversations();
     }
-  }, [user, fetchConversations]);
+  }, [user]);
 
   const handleLogout = async () => {
     if (user && user.id) {

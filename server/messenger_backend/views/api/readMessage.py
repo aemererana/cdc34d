@@ -1,44 +1,47 @@
 from urllib.request import Request
 from django.contrib.auth.middleware import get_user
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from messenger_backend.models import Message, Conversation
 from rest_framework.views import APIView
 
 class ReadMessages(APIView):
 
-    def get(self, request : Request):
-        try:
-            user = get_user(request)
+    def put(self, request : Request):
+        user = get_user(request)
 
-            if user.is_anonymous:
-                return HttpResponse(status=401)
+        if user.is_anonymous:
+            return HttpResponse(status=401)
 
-            reading_person_id = user.id
-            body = request.query_params
-            conversation_id = body.get("conversationId")
-            recipient_id = body.get("recipientId")
+        reading_person_id = user.id
+        body = request.data
+        conversation_id = body.get("conversationId")
 
 
-            # if convo id is supplied then use it
-            # otherwise find it and if none found
-            # send error
-            if not conversation_id:
-                conversation = Conversation.find_conversation(reading_person_id, recipient_id)
-                if conversation:
-                    conversation_id = conversation["id"]
-
-            if conversation_id:
-                messages = Message.objects.filter(conversation=conversation_id)
-                for msg in messages:
-                    if msg.senderId != reading_person_id and msg.isRead is not True:
-                        msg.isRead = True
-                        msg.save()
-                
-                return JsonResponse({"result": "ok"})
-
-
-            # the data supplied did not return a valid conversation
+        # if convo id is not supplied
+        # send 400
+        if not conversation_id:
             return HttpResponse(status=400)
 
-        except Exception as e:
-            return HttpResponse(status=500)
+        try:
+            conversation = Conversation.objects.get(pk=conversation_id)
+
+            # check if user has authority on the conversation
+            # error 403 if not
+            if(conversation.user1_id != reading_person_id and conversation.user2_id != reading_person_id):
+                return HttpResponse(status=403)
+
+        except Conversation.DoesNotExist:
+            # not found
+            return HttpResponse(status=404)
+
+        # get messages where the other party is
+        # the sender and hasn't been read.
+        messages = Message.objects.filter(conversation=conversation_id).exclude(senderId=reading_person_id, isRead=True)
+
+        for msg in messages:
+            msg.isRead = True
+
+        # bulk update for all msgs to be read
+        Message.objects.bulk_update(messages, ['isRead'])
+
+        return HttpResponse(status=204)

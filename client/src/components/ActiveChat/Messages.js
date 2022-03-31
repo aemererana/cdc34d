@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box } from '@material-ui/core';
 import { SenderBubble, OtherUserBubble } from '.';
 import moment from 'moment';
@@ -6,7 +6,15 @@ import moment from 'moment';
 const Messages = (props) => {
   const { messages, otherUser, userId } = props;
 
-  const lastReadRecieptIdx = messages.map(elm => elm.isRead && elm.senderId === userId).lastIndexOf(true);
+  // get the last read msg's index
+  const lastReadRecieptIdx = useMemo(() => {
+    return messages.reduceRight((prevIdx, msg, msgIdx) => {
+      if(prevIdx === -1 && msg.isRead && msg.senderId === userId)
+        return msgIdx; // found last message
+      else
+        return prevIdx; // carry over
+    }, -1);
+  }, [messages, userId]);
 
   return (
     <Box>
